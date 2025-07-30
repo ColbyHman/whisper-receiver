@@ -5,3 +5,8 @@ services:
       - "8000:8000"
     volumes:
       - ./uploads:/app/uploads
+    environment:
+      USE_DB: ${USE_DB}
+      DB_URL: ${DB_URL}
+      DATABASE: ${DATABASE}
+      WEBHOOK_URL: ${WEBHOOK_URL}
