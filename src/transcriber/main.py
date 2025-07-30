@@ -4,6 +4,8 @@ import httpx
 import tempfile
 import whisper
 import os
+import ssl
+import certifi
 
 from .adapters.mongo import get_db_collection, insert
 from .helpers.transcriber import transcribe
@@ -17,6 +19,9 @@ DATABASE_URL = os.getenv("DB_URL", "")
 DATABASE = os.getenv("DATABASE")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 
+ssl_context = ssl.create_default_context()
+ssl_context.load_verify_locations(certifi.where())
+
 model = whisper.load_model("medium")
 
 async def process_request(file_path: str):
@@ -25,7 +30,7 @@ async def process_request(file_path: str):
     
     response = {"transcription": result["text"]}
     print("Sending transcription to ", WEBHOOK_URL)
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=ssl_context) as client:
         try:
             await client.post(WEBHOOK_URL, json=response)
             print("Sent transcription to URL!", flush=True)
