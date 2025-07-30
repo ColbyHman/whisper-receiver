@@ -209,6 +209,12 @@ wheels = [
 ]
 
 [[package]]
+name = "logging"
+version = "0.4.9.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/4b/979db9e44be09f71e85c9c8cfc42f258adfb7d93ce01deed2788b2948919/logging-0.4.9.6.tar.gz", hash = "sha256:26f6b50773f085042d301085bd1bf5d9f3735704db9f37c1ce6d8b85c38f2417", size = 96029, upload-time = "2013-06-04T23:43:22.086Z" }
+
+[[package]]
 name = "markupsafe"
 version = "3.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -768,6 +774,7 @@ dependencies = [
     { name = "dotenv" },
     { name = "fastapi" },
     { name = "httpx" },
+    { name = "logging" },
     { name = "mongo" },
     { name = "openai-whisper" },
     { name = "python-multipart" },
@@ -780,6 +787,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.116.1" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "logging", specifier = ">=0.4.9.6" },
     { name = "mongo", specifier = ">=0.2.0" },
     { name = "openai-whisper", specifier = ">=20250625" },
     { name = "python-multipart", specifier = ">=0.0.20" },

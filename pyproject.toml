@@ -9,6 +9,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "fastapi>=0.116.1",
     "httpx>=0.28.1",
+    "logging>=0.4.9.6",
     "mongo>=0.2.0",
     "openai-whisper>=20250625",
     "python-multipart>=0.0.20",

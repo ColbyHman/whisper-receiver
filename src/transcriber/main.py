@@ -28,9 +28,9 @@ async def process_request(file_path: str):
     async with httpx.AsyncClient() as client:
         try:
             await client.post(WEBHOOK_URL, json=response)
-            print("Sent transcription to URL!")
+            print("Sent transcription to URL!", flush=True)
         except httpx.HTTPError as e:
-            print(f"Webhook POST failed: {e}")
+            print(f"Webhook POST failed: {e}", flush=True)
         finally:
             os.remove(file_path)  # clean up temp file
 
@@ -43,7 +43,7 @@ async def health_check():
 @app.post("/transcribe/", status_code=status.HTTP_201_CREATED)
 async def transcribe_audio(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """Transcribe Audio Endpoint"""
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as tmp:
         contents = await file.read()
         tmp.write(contents)
         temp_file_path = tmp.name
