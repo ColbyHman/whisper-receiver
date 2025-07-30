@@ -1,0 +1,7 @@
+services:
+  whisper-service:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
