@@ -4,8 +4,8 @@ import httpx
 import whisper
 import os
 
-from adapters.mongo import get_db_collection, insert
-from helpers.transcriber import transcribe
+from .adapters.mongo import get_db_collection, insert
+from .helpers.transcriber import transcribe
 
 load_dotenv()
 
