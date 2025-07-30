@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, BackgroundTasks, status
 from dotenv import load_dotenv
 import httpx
+import tempfile
 import whisper
 import os
 
@@ -18,19 +19,19 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 
 model = whisper.load_model("medium")
 
-async def process_request(file):
+async def process_request(file_path: str):
     """Process Transcription Request in the Background"""
-    result = await transcribe(file, model)
+    result = await transcribe(file_path, model)
     
-    # Return the text transcription
     response = {"transcription": result["text"]}
 
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(WEBHOOK_URL, json=response)
-            response.raise_for_status()
+            await client.post(WEBHOOK_URL, json=response)
         except httpx.HTTPError as e:
             print(f"Webhook POST failed: {e}")
+        finally:
+            os.remove(file_path)  # clean up temp file
 
 
 @app.get("/health")
@@ -41,8 +42,11 @@ async def health_check():
 @app.post("/transcribe/", status_code=status.HTTP_201_CREATED)
 async def transcribe_audio(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """Transcribe Audio Endpoint"""
-    
-    background_tasks.add_task(process_request, file)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+        contents = await file.read()
+        tmp.write(contents)
+        temp_file_path = tmp.name
+    background_tasks.add_task(process_request, temp_file_path)
     return {"detail":"File received"}
 
 def run():
