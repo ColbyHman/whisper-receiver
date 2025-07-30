@@ -24,10 +24,11 @@ async def process_request(file_path: str):
     result = await transcribe(file_path, model)
     
     response = {"transcription": result["text"]}
-
+    print("Sending transcription to ", WEBHOOK_URL)
     async with httpx.AsyncClient() as client:
         try:
             await client.post(WEBHOOK_URL, json=response)
+            print("Sent transcription to URL!")
         except httpx.HTTPError as e:
             print(f"Webhook POST failed: {e}")
         finally:
