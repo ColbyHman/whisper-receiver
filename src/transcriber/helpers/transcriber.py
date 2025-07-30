@@ -1,14 +1,11 @@
 import tempfile
 
-async def transcribe(file, model) -> dict:
+async def transcribe(file_path, model) -> dict:
 
-    suffix = ".m4a"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as temp_audio:
-        content = await file.read()
-        temp_audio.write(content)
-        temp_audio.flush()
+    with open(file_path, "rb") as f:
+        audio_bytes = f.read()
 
         # Run whisper transcription
-        result = model.transcribe(temp_audio.name)
+        result = model.transcribe(audio_bytes)
 
         return result
