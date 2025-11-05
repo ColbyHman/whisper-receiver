@@ -10,3 +10,8 @@ services:
       DB_URL: ${DB_URL}
       DATABASE: ${DATABASE}
       WEBHOOK_URL: ${WEBHOOK_URL}
+  
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
