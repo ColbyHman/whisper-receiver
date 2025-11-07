@@ -7,8 +7,8 @@ import os
 import ssl
 import certifi
 
-from .adapters.mongo import get_db_collection, insert
-from .helpers.transcriber import transcribe
+from src.common.adapters.mongo import get_db_collection, insert
+from helpers.transcriber import transcribe
 
 load_dotenv()
 
@@ -22,7 +22,7 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 ssl_context = ssl.create_default_context()
 ssl_context.load_verify_locations(certifi.where())
 
-model = whisper.load_model("medium")
+model = whisper.load_model("small")
 
 async def process_request(file_path: str):
     """Process Transcription Request in the Background"""

@@ -9,10 +9,3 @@ def get_redis_client(host: str = "localhost", port: int = 6379, db: int = 0) -> 
         return client
     except Exception as e:
         raise Exception("Could not get Redis Client: ", e)
-    
-def insert(key: str, value: str, client: Redis):
-
-    try:
-        client.lpush(key, value)
-    except Exception as e:
-        raise Exception("Could not insert item: ", e)
