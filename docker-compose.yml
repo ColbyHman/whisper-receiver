@@ -13,16 +13,18 @@ services:
       - >
         echo 'Checking for model...' &&
         if [ ! -f /data/models/ggml-medium-q5_0.bin ]; then
-          echo 'Downloading model ggml-medium-q5_0...' &&
+          echo 'Downloading model ggml-medium-q5_0 (this may take a few minutes)...' &&
           gowhisper download-model ggml-medium-q5_0;
         fi &&
+        echo 'Starting whisper server...' &&
         gowhisper run --http.addr :8081
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/api/whisper/models"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/whisper/models", "||", "exit", "1"]
       interval: 30s
-      timeout: 10s
-      retries: 5
+      timeout: 15s
+      retries: 30
+      start_period: 120s
 
   whisper-receiver:
     build:
