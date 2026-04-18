@@ -1,6 +1,22 @@
 version: "3.8"
 
 services:
+  model-download:
+    image: ghcr.io/mutablelogic/go-whisper:latest
+    container_name: whisper-model-downloader
+    volumes:
+      - whisper_models:/data/models
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        if [ -f /data/models/ggml-medium-q5_0.bin ]; then
+          echo 'Model already exists';
+        else
+          echo 'Downloading model ggml-medium-q5_0 (this may take a few minutes)...' &&
+          gowhisper download-model ggml-medium-q5_0;
+        fi
+    restart: "no"
+
   whisper-server:
     image: ghcr.io/mutablelogic/go-whisper:latest
     container_name: whisper-server
@@ -8,23 +24,37 @@ services:
       - "8081:8081"
     volumes:
       - whisper_models:/data/models
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >
-        echo 'Checking for model...' &&
-        if [ ! -f /data/models/ggml-medium-q5_0.bin ]; then
-          echo 'Downloading model ggml-medium-q5_0 (this may take a few minutes)...' &&
-          gowhisper download-model ggml-medium-q5_0;
-        fi &&
-        echo 'Starting whisper server...' &&
-        gowhisper run --http.addr :8081
+    command: ["gowhisper", "run", "--http.addr", ":8081"]
     restart: unless-stopped
+    depends_on:
+      model-download:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/api/whisper/models", "||", "exit", "1"]
       interval: 30s
       timeout: 15s
-      retries: 30
-      start_period: 120s
+      retries: 10
+      start_period: 10s
+
+  whisper-receiver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whisper-receiver
+    ports:
+      - "8000:8000"
+    environment:
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - WHISPER_URL=http://whisper-server:8081
+      - WHISPER_MODEL=${WHISPER_MODEL:-ggml-medium-q5_0}
+    depends_on:
+      whisper-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  whisper_models:
+    driver: local
 
   whisper-receiver:
     build:
