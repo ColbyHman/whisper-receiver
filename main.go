@@ -112,10 +112,13 @@ func checkWhisperServer() bool {
 }
 
 func transcribeAudioHandler(c *gin.Context) {
+	log.Printf("Content-Type: %s", c.ContentType())
+	log.Printf("Content-Length: %s", c.GetHeader("Content-Length"))
+
 	file, err := c.FormFile("file")
 	if err != nil {
-		log.Printf("Failed to get file from request: %v", err)
-		log.Printf("Request content-type: %s", c.ContentType())
+		log.Printf("FormFile error: %v", err)
+		log.Printf("Available form keys: %v", c.Request.Form)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get file from request"})
 		return
 	}
