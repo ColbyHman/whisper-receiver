@@ -1,18 +1,16 @@
 services:
-  model-download:
-    image: ghcr.io/mutablelogic/go-whisper:latest
-    container_name: whisper-model-downloader
+  init-model:
+    image: alpine:latest
+    container_name: whisper-init
     volumes:
       - whisper_models:/data/models
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >
-        if [ -f /data/models/ggml-medium-q5_0.bin ]; then
-          echo 'Model already exists';
-        else
-          echo 'Downloading model ggml-medium-q5_0...' &&
-          gowhisper download-model ggml-medium-q5_0;
-        fi
+        apk add --no-cache curl &&
+        echo 'Downloading ggml-medium-q5_0 model...' &&
+        curl -L -o /data/models/ggml-medium-q5_0.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium-q5_0.bin &&
+        echo 'Download complete'
     restart: "no"
 
   whisper-server:
@@ -25,14 +23,14 @@ services:
     command: ["gowhisper", "run", "--http.addr", ":8081"]
     restart: unless-stopped
     depends_on:
-      model-download:
+      init-model:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/api/whisper/models", "||", "exit", "1"]
-      interval: 30s
-      timeout: 15s
-      retries: 10
-      start_period: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/whisper/models"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
 
   whisper-receiver:
     build:
@@ -50,10 +48,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   whisper_models:
