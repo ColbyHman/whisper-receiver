@@ -18,10 +18,10 @@ import (
 )
 
 var (
-	webhookURL   = os.Getenv("WEBHOOK_URL")
-	port         = getEnv("PORT", "8000")
-	whisperURL   = getEnv("WHISPER_URL", "http://localhost:8081")
-	modelID      = getEnv("WHISPER_MODEL", "ggml-medium-q5_0")
+	webhookURL = os.Getenv("WEBHOOK_URL")
+	port       = getEnv("PORT", "8000")
+	whisperURL = getEnv("WHISPER_URL", "http://localhost:8081")
+	modelID    = getEnv("WHISPER_MODEL", "ggml-medium-q5_0")
 )
 
 func getEnv(key, defaultValue string) string {
@@ -81,8 +81,8 @@ func setupRouter() *gin.Engine {
 func healthCheck(c *gin.Context) {
 	whisperHealthy := checkWhisperServer()
 	c.JSON(http.StatusOK, gin.H{
-		"status":           "healthy",
-		"service":          "audio-upload-service",
+		"status":            "healthy",
+		"service":           "audio-upload-service",
 		"whisper_connected": whisperHealthy,
 	})
 }
@@ -228,17 +228,19 @@ func sendToWebhook(text string) error {
 
 	log.Printf("Sending transcription to %s\n", webhookURL)
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Post(webhookURL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		log.Printf("Webhook POST failed: %v\n", err)
-		return err
-	}
-	defer resp.Body.Close()
+	log.Printf("Payload: %s\n", string(body))
 
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("webhook returned status %d", resp.StatusCode)
-	}
+	// client := &http.Client{Timeout: 30 * time.Second}
+	// resp, err := client.Post(webhookURL, "application/json", bytes.NewReader(body))
+	// if err != nil {
+	// 	log.Printf("Webhook POST failed: %v\n", err)
+	// 	return err
+	// }
+	// defer resp.Body.Close()
+
+	// if resp.StatusCode >= 400 {
+	// 	return fmt.Errorf("webhook returned status %d", resp.StatusCode)
+	// }
 
 	log.Println("Successfully sent transcription to webhook")
 	return nil
