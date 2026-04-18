@@ -116,8 +116,13 @@ func transcribeAudioHandler(c *gin.Context) {
 	contentType := c.ContentType()
 	log.Printf("Content-Type: %s", contentType)
 
-	var file *os.File
+	var filePath string
 	var filename string
+
+	// Create temp directory if it doesn't exist
+	if err := os.MkdirAll("/tmp", 0755); err != nil {
+		log.Printf("Failed to create /tmp directory: %v", err)
+	}
 
 	if strings.HasPrefix(contentType, "audio/") || contentType == "application/octet-stream" {
 		// Direct audio upload - read from body
@@ -128,28 +133,22 @@ func transcribeAudioHandler(c *gin.Context) {
 			return
 		}
 
-		// Create temp directory if it doesn't exist
-		if err := os.MkdirAll("/tmp", 0755); err != nil {
-			log.Printf("Failed to create /tmp directory: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp directory"})
-			return
-		}
-
 		tmpFile, err := os.CreateTemp("", "whisper-*.m4a")
 		if err != nil {
 			log.Printf("Failed to create temp file: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp file"})
 			return
 		}
-		defer tmpFile.Close()
-		defer os.Remove(tmpFile.Name())
 
 		if _, err := tmpFile.Write(body); err != nil {
 			log.Printf("Failed to write audio to temp file: %v", err)
+			tmpFile.Close()
+			os.Remove(tmpFile.Name())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save audio"})
 			return
 		}
 		tmpFile.Close()
+		filePath = tmpFile.Name()
 
 		// Extract extension from content-type
 		ext := ".m4a"
@@ -162,8 +161,6 @@ func transcribeAudioHandler(c *gin.Context) {
 		}
 
 		filename = "audio" + ext
-		file = tmpFile
-
 		log.Printf("Received direct audio upload: %s, size: %d bytes", filename, len(body))
 	} else {
 		// Multipart form upload
@@ -184,30 +181,26 @@ func transcribeAudioHandler(c *gin.Context) {
 
 		tmpFile, err := os.CreateTemp("", "whisper-*.m4a")
 		if err != nil {
-			// Try creating temp directory first
-			if mkerr := os.MkdirAll("/tmp", 0755); mkerr != nil {
-				log.Printf("Failed to create /tmp directory: %v", mkerr)
-			}
-			tmpFile, err = os.CreateTemp("", "whisper-*.m4a")
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp file"})
-				return
-			}
+			log.Printf("Failed to create temp file: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp file"})
+			return
 		}
-		defer tmpFile.Close()
-		defer os.Remove(tmpFile.Name())
 
 		if _, err := io.Copy(tmpFile, src); err != nil {
+			log.Printf("Failed to copy to temp file: %v", err)
+			tmpFile.Close()
+			os.Remove(tmpFile.Name())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 			return
 		}
 		tmpFile.Close()
+		filePath = tmpFile.Name()
 
 		filename = uploadedFile.Filename
-		file = tmpFile
 	}
 
-	go processTranscription(file.Name(), filename)
+	log.Printf("Starting transcription for file: %s", filePath)
+	go processTranscription(filePath, filename)
 
 	c.JSON(http.StatusCreated, gin.H{"detail": "File received"})
 }
