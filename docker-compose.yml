@@ -1,41 +1,12 @@
 services:
-  init-model:
-    image: alpine:latest
-    container_name: whisper-init
-    volumes:
-      - whisper_models:/data
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >
-        apk add --no-cache curl &&
-        mkdir -p /data/models &&
-        echo 'Downloading ggml-medium-q5_0 model...' &&
-        curl -L -o /data/models/ggml-medium-q5_0.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium-q5_0.bin &&
-        echo 'Download complete'
-    restart: "no"
-
   whisper-server:
     image: ghcr.io/mutablelogic/go-whisper:latest
     container_name: whisper-server
     ports:
       - "8081:8081"
     volumes:
-      - whisper_models:/data
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >
-        mkdir -p /data/models &&
-        run --http.addr :8081
+      - ./models:/data/models
     restart: unless-stopped
-    depends_on:
-      init-model:
-        condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/api/whisper/models"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
 
   whisper-receiver:
     build:
@@ -49,15 +20,5 @@ services:
       - WHISPER_URL=http://whisper-server:8081
       - WHISPER_MODEL=${WHISPER_MODEL:-ggml-medium-q5_0}
     depends_on:
-      whisper-server:
-        condition: service_healthy
+      - whisper-server
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  whisper_models:
-    driver: local
