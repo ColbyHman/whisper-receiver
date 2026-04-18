@@ -72,6 +72,11 @@ func main() {
 func setupRouter() *gin.Engine {
 	router := gin.Default()
 
+	router.Use(func(c *gin.Context) {
+		log.Printf("%s %s %s", c.Request.Method, c.Request.URL.Path, c.ContentType())
+		c.Next()
+	})
+
 	router.GET("/health", healthCheck)
 	router.POST("/transcribe/", transcribeAudioHandler)
 
@@ -109,6 +114,8 @@ func checkWhisperServer() bool {
 func transcribeAudioHandler(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
+		log.Printf("Failed to get file from request: %v", err)
+		log.Printf("Request content-type: %s", c.ContentType())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get file from request"})
 		return
 	}
