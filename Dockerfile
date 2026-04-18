@@ -1,24 +1,23 @@
-# Use official Python image
-FROM python:3.11-slim
+FROM golang:1.22-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies for ffmpeg (required by whisper)
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+COPY go.mod go.sum ./
+RUN go mod download
 
-# Copy requirements (we’ll create this file next)
-COPY requirements.txt .
+COPY . .
+RUN CGO_ENABLED=0 go build -o whisper-receiver .
 
-# Install python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+FROM alpine:3.19
 
-# Copy the FastAPI app code
-COPY src/ ./src/
+RUN apk --no-cache add ca-certificates
 
-# Expose port
+WORKDIR /app
+
+COPY --from=builder /app/whisper-receiver .
+
+ENV PORT=8000
+
 EXPOSE 8000
 
-# Run the app with uvicorn
-CMD ["uvicorn", "src.transcriber.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+CMD ["./whisper-receiver"]

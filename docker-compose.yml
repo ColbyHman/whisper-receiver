@@ -1,12 +1,50 @@
+version: "3.8"
+
 services:
-  whisper-service:
-    build: .
+  whisper-server:
+    image: ghcr.io/mutablelogic/go-whisper:latest
+    container_name: whisper-server
+    ports:
+      - "8081:8081"
+    volumes:
+      - whisper_models:/data/models
+    environment:
+      - GOWHISPER_MODEL=${WHISPER_MODEL:-ggml-medium-q5_0}
+    command: >
+      sh -c "echo 'Checking for model...' && 
+             if [ ! -f /data/models/ggml-medium-q5_0.bin ]; then 
+               echo 'Downloading model ggml-medium-q5_0...' && 
+               gowhisper download-model ggml-medium-q5_0; 
+             fi &&
+             gowhisper run --http.addr :8081"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/whisper/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  whisper-receiver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whisper-receiver
     ports:
       - "8000:8000"
-    volumes:
-      - ./uploads:/app/uploads
     environment:
-      USE_DB: ${USE_DB}
-      DB_URL: ${DB_URL}
-      DATABASE: ${DATABASE}
-      WEBHOOK_URL: ${WEBHOOK_URL}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - WHISPER_URL=http://whisper-server:8081
+      - WHISPER_MODEL=${WHISPER_MODEL:-ggml-medium-q5_0}
+    depends_on:
+      whisper-server:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  whisper_models:
+    driver: local
