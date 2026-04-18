@@ -3,7 +3,7 @@ services:
     image: alpine:latest
     container_name: whisper-init
     volumes:
-      - whisper_models:/data/models
+      - whisper_models:/data
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >
@@ -19,8 +19,8 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - whisper_models:/data/models
-    command: ["gowhisper", "run", "--http.addr", ":8081"]
+      - whisper_models:/data
+    command: ["run", "--http.addr", ":8081"]
     restart: unless-stopped
     depends_on:
       init-model:
@@ -30,7 +30,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
-      start_period: 5s
+      start_period: 10s
 
   whisper-receiver:
     build:
