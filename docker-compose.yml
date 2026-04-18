@@ -8,15 +8,15 @@ services:
       - "8081:8081"
     volumes:
       - whisper_models:/data/models
-    environment:
-      - GOWHISPER_MODEL=${WHISPER_MODEL:-ggml-medium-q5_0}
-    command: >
-      sh -c "echo 'Checking for model...' && 
-             if [ ! -f /data/models/ggml-medium-q5_0.bin ]; then 
-               echo 'Downloading model ggml-medium-q5_0...' && 
-               gowhisper download-model ggml-medium-q5_0; 
-             fi &&
-             gowhisper run --http.addr :8081"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        echo 'Checking for model...' &&
+        if [ ! -f /data/models/ggml-medium-q5_0.bin ]; then
+          echo 'Downloading model ggml-medium-q5_0...' &&
+          gowhisper download-model ggml-medium-q5_0;
+        fi &&
+        gowhisper run --http.addr :8081
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/api/whisper/models"]
