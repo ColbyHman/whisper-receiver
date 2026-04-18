@@ -128,6 +128,13 @@ func transcribeAudioHandler(c *gin.Context) {
 			return
 		}
 
+		// Create temp directory if it doesn't exist
+		if err := os.MkdirAll("/tmp", 0755); err != nil {
+			log.Printf("Failed to create /tmp directory: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp directory"})
+			return
+		}
+
 		tmpFile, err := os.CreateTemp("", "whisper-*.m4a")
 		if err != nil {
 			log.Printf("Failed to create temp file: %v", err)
@@ -177,8 +184,15 @@ func transcribeAudioHandler(c *gin.Context) {
 
 		tmpFile, err := os.CreateTemp("", "whisper-*.m4a")
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp file"})
-			return
+			// Try creating temp directory first
+			if mkerr := os.MkdirAll("/tmp", 0755); mkerr != nil {
+				log.Printf("Failed to create /tmp directory: %v", mkerr)
+			}
+			tmpFile, err = os.CreateTemp("", "whisper-*.m4a")
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp file"})
+				return
+			}
 		}
 		defer tmpFile.Close()
 		defer os.Remove(tmpFile.Name())
